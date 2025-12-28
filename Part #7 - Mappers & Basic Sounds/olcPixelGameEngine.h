@@ -523,6 +523,7 @@ int main()
 		#endif
 	#endif
 
+	#define NOMINMAX
 	#include <windows.h>
 	#undef _WINSOCKAPI_
 #endif
@@ -548,13 +549,12 @@ int main()
 #endif
 #endif
 
-#if defined(OLC_PGE_HEADLESS)
-#if defined max
+// Undefine min/max macros if they exist (from Windows headers)
+#if defined(max)
 #undef max
 #endif
-#if defined min
+#if defined(min)
 #undef min
-#endif
 #endif
 #pragma endregion
 
