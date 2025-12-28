@@ -51,12 +51,13 @@
 
 	Author
 	~~~~~~
-	David Barr, aka javidx9, ©OneLoneCoder 2019
+	David Barr, aka javidx9, ï¿½OneLoneCoder 2019
 */
 
 #include <iostream>
 #include <sstream>
 #include <deque>
+#include <Windows.h>
 
 #include "Bus.h"
 
@@ -196,10 +197,40 @@ private:
 			return 0.0f;
 	}
 
+	std::string OpenFileDialog()
+	{
+		OPENFILENAMEA ofn;
+		CHAR szFile[260] = { 0 };
+		ZeroMemory(&ofn, sizeof(OPENFILENAME));
+		ofn.lStructSize = sizeof(OPENFILENAME);
+		ofn.hwndOwner = NULL;
+		ofn.lpstrFile = szFile;
+		ofn.nMaxFile = sizeof(szFile);
+		ofn.lpstrFilter = "NES ROM Files (*.nes)\0*.nes\0All Files (*.*)\0*.*\0";
+		ofn.nFilterIndex = 1;
+		ofn.lpstrFileTitle = NULL;
+		ofn.nMaxFileTitle = 0;
+		ofn.lpstrInitialDir = NULL;
+		ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR;
+
+		if (GetOpenFileNameA(&ofn) == TRUE)
+		{
+			return ofn.lpstrFile;
+		}
+		return "";
+	}
+
 	bool OnUserCreate() override
 	{
 		// Load the cartridge
-		cart = std::make_shared<Cartridge>("../nestest.nes");
+		std::string romPath = OpenFileDialog();
+		if (romPath.empty())
+		{
+			// User cancelled, try default file
+			romPath = "../nestest.nes";
+		}
+		
+		cart = std::make_shared<Cartridge>(romPath);
 		
 		if (!cart->ImageValid())
 			return false;
