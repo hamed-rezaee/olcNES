@@ -1,0 +1,58 @@
+name: Build NES Emulator
+
+on:
+  workflow_dispatch:
+    inputs:
+      part:
+        description: "Which part to build"
+        required: true
+        type: choice
+        options:
+          - "Part#2 - CPU"
+          - "Part #3 - Buses, Rams, Roms & Mappers"
+          - "Part #4 - PPU Backgrounds"
+          - "Part #5 - PPU Foregrounds"
+          - "Part #7 - Mappers & Basic Sounds"
+        default: "Part #7 - Mappers & Basic Sounds"
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Add MSBuild to PATH
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Build Project
+        working-directory: ${{ github.event.inputs.part }}/NES_VS_PROJECT
+        run: msbuild NES_VS_PROJECT.sln /p:Configuration=Release /p:Platform=x64
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: NES-Emulator-Build
+          path: |
+            ${{ github.event.inputs.part }}/NES_VS_PROJECT/x64/Release/
+
+      - name: Create ZIP Archive
+        run: |
+          $partName = "${{ github.event.inputs.part }}" -replace '[#\s]', '-'
+          Compress-Archive -Path "${{ github.event.inputs.part }}/NES_VS_PROJECT/x64/Release/*" -DestinationPath "NES-Emulator-$partName.zip"
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: release-${{ github.run_number }}
+          name: NES Emulator - ${{ github.event.inputs.part }}
+          body: |
+            Build of ${{ github.event.inputs.part }}
+            Build Number: ${{ github.run_number }}
+            Triggered manually on ${{ github.event.repository.updated_at }}
+          files: NES-Emulator-*.zip
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
